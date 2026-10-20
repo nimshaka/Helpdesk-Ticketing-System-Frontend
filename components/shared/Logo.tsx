@@ -29,7 +29,7 @@ export default function Logo({
   const logoImage = (
     <Image
       src="/logo/Logo.webp"
-      alt="TutorWorld"
+      alt="Helpdesk Logo"
       width={dimensions.width}
       height={dimensions.height}
       priority={priority}
