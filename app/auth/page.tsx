@@ -1,5 +1,5 @@
-import AuthPage from '@/features/auth/components/AuthPage';
+import { redirect } from 'next/navigation';
 
-export default function AuthPageRoute() {
-  return <AuthPage />;
+export default function AuthPageRedirect() {
+  redirect('/login');
 }

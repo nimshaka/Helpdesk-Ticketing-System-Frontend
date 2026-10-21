@@ -1,25 +1,78 @@
 'use client';
 
-import Image from 'next/image';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Button from '@/components/shared/Button';
 import Input from '@/components/shared/Input';
+import DemoAccounts from './DemoAccounts';
+import { loginSchema } from '@/features/auth/schemas';
+import { loginApi } from '@/features/auth/api';
+import { toast } from '@/lib/toast/toastService';
 
 export default function LoginSection() {
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [errors, setErrors] = useState<{ email?: string; password?: string; general?: string }>({});
+  const [loading, setLoading] = useState(false);
+
+  const handleSelectAccount = (selectedEmail: string) => {
+    setEmail(selectedEmail);
+    setPassword('password');
+    setErrors({});
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrors({});
+
+    const result = loginSchema.safeParse({ email, password });
+    if (!result.success) {
+      const fieldErrors: { email?: string; password?: string } = {};
+      for (const err of result.error.issues) {
+        if (err.path[0] === 'email') fieldErrors.email = err.message;
+        if (err.path[0] === 'password') fieldErrors.password = err.message;
+      }
+      setErrors(fieldErrors);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const res = await loginApi(result.data);
+      if (!res.success || !res.user) {
+        setErrors({ general: res.error || 'Invalid credentials' });
+        return;
+      }
+
+      toast.success(`Welcome back, ${res.user.name}!`);
+      router.push(`/${res.user.role}/dashboard`);
+      router.refresh();
+    } catch {
+      setErrors({ general: 'An unexpected error occurred. Please try again.' });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <form onSubmit={(e) => e.preventDefault()} className="flex w-full flex-col space-y-5">
-      <div className="space-y-5">
+    <div className="flex w-full flex-col">
+      <form onSubmit={handleSubmit} className="flex w-full flex-col space-y-4">
+        {errors.general && (
+          <div className="rounded-xl border border-error/30 bg-error-light/50 p-3 text-xs text-error font-medium">
+            {errors.general}
+          </div>
+        )}
+
         <div className="space-y-1">
           <Input
             id="login-email"
-            type="text"
+            type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="Email"
+            placeholder="Email address"
             autoComplete="email"
+            errorMessage={errors.email}
           />
         </div>
 
@@ -31,44 +84,23 @@ export default function LoginSection() {
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Password"
             autoComplete="current-password"
+            errorMessage={errors.password}
           />
-          <div className="flex justify-end pt-1">
-            <button
-              type="button"
-              className="transition-smooth cursor-pointer text-sm leading-5 font-normal text-foreground-secondary hover:text-foreground"
-            >
-              Forgot Password?
-            </button>
-          </div>
         </div>
-      </div>
 
-      <Button
-        type="submit"
-        size="free-lg"
-        variant="primary"
-        className="mt-6 h-[50px] w-full rounded-[15px]"
-      >
-        Login
-      </Button>
-
-      <div className="flex items-center gap-6">
-        <div className="h-px flex-1 bg-gradient-to-r from-transparent to-border" />
-        <p className="text-center text-sm leading-5 font-semibold text-foreground">
-          Or continue with
-        </p>
-        <div className="h-px flex-1 scale-y-[-1] rotate-180 bg-gradient-to-r from-transparent to-border" />
-      </div>
-
-      <div className="flex items-center justify-center gap-5">
-        <button
-          type="button"
-          className="transition-smooth flex size-[58px] cursor-pointer items-center justify-center rounded-[10px] border border-border hover:border-border-hover lg:size-[66px]"
-          aria-label="Login with Google"
+        <Button
+          type="submit"
+          size="free-lg"
+          variant="primary"
+          className="mt-4 h-[48px] w-full rounded-[14px]"
+          isLoading={loading}
+          disabled={loading}
         >
-          <Image alt="Google" className="size-6" src="/icons/Google.webp" width={24} height={24} />
-        </button>
-      </div>
-    </form>
+          Sign In
+        </Button>
+      </form>
+
+      <DemoAccounts onSelectAccount={handleSelectAccount} />
+    </div>
   );
 }

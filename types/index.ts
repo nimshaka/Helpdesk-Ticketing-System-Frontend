@@ -1,71 +1,6 @@
-// ─── Enums ────────────────────────────────────────────────────────────────────
-
 export type TicketPriority = 'low' | 'medium' | 'high';
-export type TicketStatusValue = 'open' | 'in_progress' | 'resolved' | 'waiting_for_customer';
+export type TicketStatusValue = 'open' | 'in_progress' | 'waiting_for_customer' | 'resolved';
 export type UserRole = 'admin' | 'agent' | 'customer';
-
-// ─── Sub-shapes ───────────────────────────────────────────────────────────────
-
-export interface TicketStatus {
-  value: TicketStatusValue;
-  label: string;
-}
-
-export interface TicketUser {
-  id: number;
-  name: string;
-}
-
-export interface TicketAssignment {
-  agent: TicketUser;
-  assigned_by: number | null;
-  assigned_at: string | null;
-  unassigned_at: string | null;
-}
-
-export interface ReplyAuthor {
-  id: number;
-  name: string;
-  role: UserRole;
-}
-
-export interface StatusHistoryStatus {
-  value: TicketStatusValue;
-  label: string;
-}
-
-// ─── API Resources ────────────────────────────────────────────────────────────
-
-export interface TicketReply {
-  id: number;
-  body: string;
-  author: ReplyAuthor;
-  created_at: string;
-}
-
-export interface TicketStatusHistoryEntry {
-  id: number;
-  from: StatusHistoryStatus | null;
-  to: StatusHistoryStatus;
-  changed_by: TicketUser;
-  created_at: string;
-}
-
-export interface Ticket {
-  id: number;
-  subject: string;
-  description: string;
-  priority: TicketPriority;
-  status: TicketStatus;
-  customer: TicketUser;
-  agent: TicketUser | null;
-  replies?: TicketReply[];
-  status_history?: TicketStatusHistoryEntry[];
-  assignments?: TicketAssignment[];
-  last_activity_at: string | null;
-  created_at: string;
-  updated_at: string;
-}
 
 export interface User {
   id: number;
@@ -76,21 +11,84 @@ export interface User {
   created_at: string;
 }
 
-// ─── Dashboard ────────────────────────────────────────────────────────────────
+export interface TicketStatus {
+  value: TicketStatusValue;
+  label: string;
+}
+
+export interface TicketUserRef {
+  id: number;
+  name: string;
+}
+
+export type TicketUser = TicketUserRef;
+
+export interface ReplyAuthor {
+  id: number;
+  name: string;
+  role: UserRole;
+}
+
+export interface Reply {
+  id: number;
+  body: string;
+  author: ReplyAuthor;
+  created_at: string;
+}
+
+export type TicketReply = Reply;
+
+export interface StatusHistory {
+  id: number;
+  from: TicketStatus | null;
+  to: TicketStatus;
+  changed_by: TicketUserRef;
+  created_at: string;
+}
+
+export type TicketStatusHistoryEntry = StatusHistory;
+
+export interface Assignment {
+  agent: TicketUserRef;
+  assigned_by: number | null;
+  assigned_at: string | null;
+  unassigned_at: string | null;
+}
+
+export type TicketAssignment = Assignment;
+
+export interface Ticket {
+  id: number;
+  subject: string;
+  description: string;
+  priority: TicketPriority;
+  status: TicketStatus;
+  customer: TicketUserRef;
+  agent: TicketUserRef | null;
+  replies?: Reply[];
+  status_history?: StatusHistory[];
+  assignments?: Assignment[];
+  last_activity_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ActivityItem {
+  id: string;
+  type: 'reply' | 'status_change' | 'assigned' | 'created';
+  summary: string;
+  preview?: string;
+  actor: TicketUserRef;
+  ticket: { id: number; subject: string };
+  occurred_at: string;
+}
+
+export type DashboardActivity = ActivityItem;
 
 export interface DashboardStatusCount {
   status: TicketStatusValue;
   label: string;
   count: number;
-}
-
-export interface DashboardActivity {
-  type: 'reply' | 'status_change';
-  summary: string;
-  preview?: string;
-  actor: TicketUser;
-  ticket: { id: number; subject: string };
-  occurred_at: string;
 }
 
 export interface DashboardData {
@@ -99,10 +97,8 @@ export interface DashboardData {
   counts: DashboardStatusCount[];
   unassigned?: number;
   assigned_to_me?: number;
-  recent_activity: DashboardActivity[];
+  recent_activity: ActivityItem[];
 }
-
-// ─── Pagination ───────────────────────────────────────────────────────────────
 
 export interface PaginationMeta {
   current_page: number;
